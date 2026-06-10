@@ -51,3 +51,24 @@ AykarInfotech is committed to providing fast, reliable, and secure digital payme
 ## License
 
 © 2024 AykarInfotech. All rights reserved.
+
+---
+
+## Rampex Integration (added)
+
+Environment variables (set these in Vercel → Project → Settings → Environment Variables):
+
+| Variable | Value |
+|---|---|
+| `RAMPEX_API_KEY` | Your API key from the Rampex dashboard |
+| `RAMPEX_WEBHOOK_SECRET` | Webhook secret from Rampex dashboard → Webhook Settings |
+| `RAMPEX_API_BASE` | Optional. Defaults to `https://rampex.io/api` |
+| `NEXT_PUBLIC_BASE_URL` | Your deployed URL, e.g. `https://yourproject.vercel.app` (already used by NOWPayments) |
+
+Webhook URL to register in your Rampex dashboard:
+
+```
+https://YOUR-DOMAIN.vercel.app/api/rampex-webhook
+```
+
+The webhook verifies the `X-Rampex-Signature` (HMAC-SHA256 of the raw body) and logs payment results to Vercel Logs.

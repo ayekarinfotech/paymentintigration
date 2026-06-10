@@ -6,6 +6,8 @@ const PRESET_AMOUNTS = [25, 50, 100, 250, 500, 1000];
 export default function Home() {
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
+  const [email, setEmail] = useState('');
+  const [method, setMethod] = useState('nowpayments'); // 'nowpayments' | 'rampex'
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -24,18 +26,23 @@ export default function Home() {
       setError('Minimum payment is $1.00');
       return;
     }
+    if (method === 'rampex' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError('Please enter your email for Rampex payments.');
+      return;
+    }
 
     setLoading(true);
     try {
-      const res = await fetch('/api/create-invoice', {
+      const endpoint = method === 'rampex' ? '/api/create-rampex-link' : '/api/create-invoice';
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount, description }),
+        body: JSON.stringify({ amount, description, email }),
       });
       const data = await res.json();
 
       if (!res.ok) throw new Error(data.error || 'Something went wrong');
-      window.location.href = data.invoiceUrl;
+      window.location.href = data.paymentUrl || data.invoiceUrl;
     } catch (err) {
       setError(err.message);
       setLoading(false);
@@ -117,6 +124,45 @@ export default function Home() {
             </div>
 
             {/* Description */}
+            {/* Payment method */}
+            <div style={styles.section}>
+              <label style={styles.label}>Payment method</label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <button
+                  onClick={() => { setMethod('nowpayments'); setError(''); }}
+                  style={{
+                    ...styles.presetBtn,
+                    ...(method === 'nowpayments' ? styles.presetBtnActive : {}),
+                  }}
+                >
+                  ₿ NOWPayments
+                </button>
+                <button
+                  onClick={() => { setMethod('rampex'); setError(''); }}
+                  style={{
+                    ...styles.presetBtn,
+                    ...(method === 'rampex' ? styles.presetBtnActive : {}),
+                  }}
+                >
+                  ⚡ Rampex
+                </button>
+              </div>
+            </div>
+
+            {/* Email (required for Rampex) */}
+            {method === 'rampex' && (
+              <div style={styles.section}>
+                <label style={styles.label}>Your email</label>
+                <input
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => { setEmail(e.target.value); setError(''); }}
+                  style={{ ...styles.input, paddingLeft: '16px' }}
+                />
+              </div>
+            )}
+
             <div style={styles.section}>
               <label style={styles.label}>Payment note <span style={styles.optional}>(optional)</span></label>
               <input
@@ -182,7 +228,7 @@ export default function Home() {
 
           {/* Footer */}
           <p style={styles.footer}>
-            Powered by <span style={styles.footerAccent}>NOWPayments</span> · 
+            Powered by <span style={styles.footerAccent}>NOWPayments</span> &amp; <span style={styles.footerAccent}>Rampex</span> · 
             Secured by <span style={styles.footerAccent}>Guardarian</span> ·{' '}
             <span style={styles.footerMuted}>© 2026 AykarInfotech</span>
           </p>
