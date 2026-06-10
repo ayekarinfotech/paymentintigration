@@ -22,7 +22,9 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Rampex is not configured (missing RAMPEX_API_KEY)' });
   }
 
-  const apiBase = (process.env.RAMPEX_API_BASE || 'https://rampex.io/api').replace(/\/+$/, '');
+  // The Rampex backend actually lives on their Supabase Edge Functions host —
+  // their own WooCommerce plugin always uses this URL. rampex.io/api returns HTML, not JSON.
+  const apiBase = (process.env.RAMPEX_API_BASE || 'https://rrrdpgpsinoikcrcenso.supabase.co/functions/v1').replace(/\/+$/, '');
   const order = orderId || `AYK-${Date.now()}`;
 
   try {
@@ -66,9 +68,14 @@ export default async function handler(req, res) {
       });
     }
 
-    console.error('Rampex create-payment-link failed:', response.status, data);
-    return res.status(response.status || 502).json({
-      error: (data && data.error && data.error.message) || 'Unable to generate Rampex payment link',
+    console.error('Rampex create-payment-link failed:', response.status, JSON.stringify(data));
+    // Never return 2xx here — if we got this far there is no payment_url,
+    // and the frontend must show an error, not redirect.
+    const upstream = response.status;
+    return res.status(upstream >= 400 ? upstream : 502).json({
+      error:
+        (data && data.error && data.error.message) ||
+        `Rampex did not return a payment link (upstream status ${upstream}). Check API key and API base URL.`,
     });
   } catch (err) {
     console.error('Rampex server error:', err);

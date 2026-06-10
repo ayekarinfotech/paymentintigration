@@ -42,7 +42,9 @@ export default function Home() {
       const data = await res.json();
 
       if (!res.ok) throw new Error(data.error || 'Something went wrong');
-      window.location.href = data.paymentUrl || data.invoiceUrl;
+      const redirectUrl = data.paymentUrl || data.invoiceUrl;
+      if (!redirectUrl) throw new Error('Payment link was not returned. Please try again or contact support.');
+      window.location.href = redirectUrl;
     } catch (err) {
       setError(err.message);
       setLoading(false);
